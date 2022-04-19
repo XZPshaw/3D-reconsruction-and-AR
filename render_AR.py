@@ -47,7 +47,7 @@ cv2.namedWindow(barsWindow, flags = cv2.WINDOW_NORMAL)
 
 # create the sliders
 cv2.createTrackbar(ratio_bar, barsWindow, 0, 5, nothing)
-cv2.createTrackbar(scale_bar, barsWindow, 0, 400, nothing)
+cv2.createTrackbar(scale_bar, barsWindow, 0, 40000, nothing)
 cv2.createTrackbar(x_bar, barsWindow, 0, 360, nothing)
 cv2.createTrackbar(y_bar, barsWindow, 0, 360, nothing)
 cv2.createTrackbar(z_bar, barsWindow, 0, 360, nothing)
@@ -182,8 +182,10 @@ def main():
     #camera_parameters = np.array([[715, 0, 480], [0, 715, 620], [0, 0, 1]])
     # Load 3D model from OBJ file
     #obj = OBJ('models/fox.obj', swapyz=True)
-    obj = OBJ('low-poly-fox-by-pixelmannen.obj', swapyz=True,texture_file='texture.png')
-    #obj = OBJ('low-poly-fox-by-pixelmannen.obj', swapyz=True,texture_file= None)
+    # obj = OBJ('low-poly-fox-by-pixelmannen.obj', swapyz=True,texture_file='texture.png')
+    # obj = OBJ('./Pix2Vox-master/result/test/model.obj', swapyz=True,texture_file='texture.png')
+    obj = OBJ('./Pix2Vox-master/result/test/model.obj', swapyz=True)
+    # obj = OBJ('low-poly-fox-by-pixelmannen.obj', swapyz=True,texture_file= None)
     
     ################## if apply ar to existing video
 
@@ -436,7 +438,7 @@ def render_with_bar_param(img, obj, projection, model, color=False):
         points = np.dot(points, rot_mat_z)
         
         points += np.array([t_x,t_y,t_z]).reshape(1,3)
-        print("face_vertices:\n",points)
+        # print("face_vertices:\n",points)
         
         # render model in the middle of the reference surface. To do so,
         # model points must be displaced
