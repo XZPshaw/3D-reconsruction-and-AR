@@ -31,7 +31,6 @@ def loadImgs_plus(path_im, keyword="", grayscale=False):
     fullfs = []
 
     files = os.listdir(path_im)
-    print(path_im)
     files.sort(key=lambda f: int(re.sub('\D', '', f)))
     for file in files:
         if file.find(keyword) != -1:
@@ -42,12 +41,11 @@ def loadImgs_plus(path_im, keyword="", grayscale=False):
     for i in range(len(fullfs)):
         print("loading file:", fs[i], end='\r')
         if grayscale:
-            im = cv2.imread(fullfs[i], 0)
-            
+            im = cv2.imread(fullfs[i], 0)   
         else:
             im = cv2.imread(fullfs[i], cv2.IMREAD_UNCHANGED).astype(np.float32) / 255.0
-
         imgs.append(im)
+    
     return np.asarray(imgs)
 
 
@@ -77,7 +75,6 @@ merger.eval()
 
 IMG_SIZE = cfg.CONST.IMG_H, cfg.CONST.IMG_W
 CROP_SIZE = cfg.CONST.CROP_IMG_H, cfg.CONST.CROP_IMG_W
-
 imageTransformation = utils.data_transforms.Compose([
     utils.data_transforms.CenterCrop(IMG_SIZE, CROP_SIZE),
     utils.data_transforms.RandomBackground(cfg.TEST.RANDOM_BG_COLOR_RANGE), 
@@ -97,7 +94,6 @@ with torch.no_grad():
     rendering_images = imageTransformation(imgs)
     rendering_images = rendering_images.expand(1, *rendering_images.shape)
     rendering_images = utils.network_utils.var_or_cuda(rendering_images)
-    #ground_truth_volume = utils.network_utils.var_or_cuda(ground_truth_volume)
 
     # Test the encoder, decoder, refiner and merger
     print("rendering_images:", rendering_images.shape)
