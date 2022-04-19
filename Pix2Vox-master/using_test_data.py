@@ -42,11 +42,11 @@ def loadImgs_plus(path_im, keyword="", grayscale=False):
         print("loading file:", fs[i], end='\r')
         if grayscale:
             im = cv2.imread(fullfs[i], 0)
-            im = cv2.resize(im, dim, interpolation = cv2.INTER_AREA)
+            # im = cv2.resize(im, dim, interpolation = cv2.INTER_AREA)
             
         else:
-            im = cv2.imread(fullfs[i], cv2.IMREAD_UNCHANGED).astype(np.float32)/255.0
-            im = cv2.resize(im, dim, interpolation = cv2.INTER_AREA)
+            im = cv2.imread(fullfs[i], cv2.IMREAD_UNCHANGED).astype(np.float32) / 255.0
+            # im = cv2.resize(im, dim, interpolation = cv2.INTER_AREA)
 
         imgs.append(im)
     return np.asarray(imgs)
@@ -81,8 +81,8 @@ CROP_SIZE = cfg.CONST.CROP_IMG_H, cfg.CONST.CROP_IMG_W
 
 imageTransformation = utils.data_transforms.Compose([
     utils.data_transforms.CenterCrop(IMG_SIZE, CROP_SIZE),
-    #utils.data_transforms.RandomBackground(cfg.TEST.RANDOM_BG_COLOR_RANGE), 
-    #utils.data_transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]), 
+    utils.data_transforms.RandomBackground(cfg.TEST.RANDOM_BG_COLOR_RANGE), 
+    utils.data_transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]), 
     utils.data_transforms.ToTensor(),
 ])
 
@@ -95,7 +95,7 @@ with torch.no_grad():
     
     print("imgs shape:", imgs.shape)
     rendering_images = torch.tensor(imgs)        # n x 224 x 224 x3
-    #rendering_images = imageTransformation(imgs)
+    rendering_images = imageTransformation(imgs)
     rendering_images = rendering_images.expand(1, *rendering_images.shape)
     rendering_images = utils.network_utils.var_or_cuda(rendering_images)
     #ground_truth_volume = utils.network_utils.var_or_cuda(ground_truth_volume)
@@ -103,7 +103,7 @@ with torch.no_grad():
     # Test the encoder, decoder, refiner and merger
     print("rendering_images:", rendering_images.shape)
     
-    image_features = encoder(rendering_images.permute(0, 1, 4, 2, 3))
+    image_features = encoder(rendering_images)
     raw_features, generated_volume = decoder(image_features)
     generated_volume = merger(raw_features, generated_volume)
     generated_volume = refiner(generated_volume)
