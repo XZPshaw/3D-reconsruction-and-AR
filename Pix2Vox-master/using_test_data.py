@@ -111,7 +111,6 @@ with torch.no_grad():
     
     img_dir = "./result"
     gv = generated_volume.cpu().numpy()
-    rendering_views = utils.binvox_visualization.get_volume_views(gv, os.path.join(img_dir, 'test'),
-                                                                  epoch_idx)
+    rendering_views = utils.binvox_visualization.get_volume_views(gv, os.path.join(img_dir, 'test'), epoch_idx)
 
 
