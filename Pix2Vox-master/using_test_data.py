@@ -36,36 +36,19 @@ def loadImgs_plus(path_im, keyword="", grayscale=False):
             fs.append(file)
             fullfs.append(path_im + "/" + file)
 
-    frame = len(fs)
-    byte = 1
-    
     dim = (224, 224)
-    
-    if grayscale:
-        im = cv2.imread(fullfs[0], 0)
-        row, column = im.shape
-        im = cv2.resize(im,dim,interpolation = cv2.INTER_AREA)
-        
-    else:
-        
-        im = cv2.imread(fullfs[0])
-        im = cv2.resize(im,dim,interpolation = cv2.INTER_AREA)
-        row, column, byte = im.shape
-
     imgs = []
-
     for i in range(len(fullfs)):
         print("loading file:", fs[i], end='\r')
         if grayscale:
             im = cv2.imread(fullfs[i], 0)
-            im = cv2.resize(im,dim,interpolation = cv2.INTER_AREA)
+            im = cv2.resize(im, dim, interpolation = cv2.INTER_AREA)
             
         else:
             im = cv2.imread(fullfs[i], cv2.IMREAD_UNCHANGED).astype(np.float32)/255.0
-            im = cv2.resize(im,dim,interpolation = cv2.INTER_AREA)
+            im = cv2.resize(im, dim, interpolation = cv2.INTER_AREA)
 
         imgs.append(im)
-
     return np.asarray(imgs)
 
 
