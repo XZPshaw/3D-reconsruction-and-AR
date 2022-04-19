@@ -23,6 +23,8 @@ import cv2
 
 from config import cfg
 
+import pytorch3d.ops
+import pytorch3d.io
 
 def loadImgs_plus(path_im, keyword="", grayscale=False):
     fs = []
@@ -35,18 +37,15 @@ def loadImgs_plus(path_im, keyword="", grayscale=False):
         if file.find(keyword) != -1:
             fs.append(file)
             fullfs.append(path_im + "/" + file)
-
-    dim = (224, 224)
+        
     imgs = []
     for i in range(len(fullfs)):
         print("loading file:", fs[i], end='\r')
         if grayscale:
             im = cv2.imread(fullfs[i], 0)
-            # im = cv2.resize(im, dim, interpolation = cv2.INTER_AREA)
             
         else:
             im = cv2.imread(fullfs[i], cv2.IMREAD_UNCHANGED).astype(np.float32) / 255.0
-            # im = cv2.resize(im, dim, interpolation = cv2.INTER_AREA)
 
         imgs.append(im)
     return np.asarray(imgs)
@@ -88,7 +87,7 @@ imageTransformation = utils.data_transforms.Compose([
 
 with torch.no_grad():
     # Get data from data loader
-
+    output_dir = "./result"
     path_img = './test_recons'
     ft = 'png'
     imgs = loadImgs_plus(path_img, ft, grayscale=False)
@@ -108,9 +107,14 @@ with torch.no_grad():
     generated_volume = merger(raw_features, generated_volume)
     generated_volume = refiner(generated_volume)
 
-    
-    img_dir = "./result"
+    meshes = pytorch3d.ops.cubify(generated_volume, 0.2)
+    verts = meshes.verts_list()[0]
+    faces = meshes.faces_list()[0]
+    pytorch3d.io.obj_io.save_obj(os.path.join(output_dir, 'test\\model.obj'), verts, faces)
+
     gv = generated_volume.cpu().numpy()
-    rendering_views = utils.binvox_visualization.get_volume_views(gv, os.path.join(img_dir, 'test'), epoch_idx)
+    rendering_views = utils.binvox_visualization.get_volume_views(gv, os.path.join(output_dir, 'test'), epoch_idx)
+
+
 
 
