@@ -1,9 +1,7 @@
 """
 Todo1: user can choose ratio of the template/cover and set length ?
-Todo2: Reconstruction part
 
 """
-
 
 
 import os
@@ -15,6 +13,7 @@ import time
 import re
 import random
 from matplotlib import pyplot as plt
+from random import randint
 from q3flag_finalized import find_homography, apply_homography
 from objloader_simple import *
 
@@ -178,6 +177,7 @@ def main():
     """
     camera_parameters = np.array([[1430, 0, 480], [0, 1430, 620], [0, 0, 1]])
     #camera_parameters = np.array([[715, 0, 480], [0, 715, 620], [0, 0, 1]])
+    
     # Load 3D model from OBJ file
     #obj = OBJ('models/fox.obj', swapyz=True)
     # obj = OBJ('low-poly-fox-by-pixelmannen.obj', swapyz=True,texture_file='texture.png')
@@ -212,19 +212,15 @@ def main():
     print("imgs shape:", imgs.shape)
 
     NrPoints = 4
-    # read the ground truth
 
     cover_path = 'BlackBackGround.jpg'
+    # read the ground truth
+    cover_path = 'pure_bookCover.jpg'
     book_cover = cv2.imread(str(cover_path))
     plt.imshow(book_cover)
 
     ref_cover = np.array([[0,0],[book_cover.shape[1] - 1, 0],[book_cover.shape[1] - 1, book_cover.shape[0] - 1],[0, book_cover.shape[0] - 1]])
-    
-    """
-    ref_cover = plt.ginput(NrPoints)
-    """
     cover = np.ones((3, NrPoints))
-    
 
     for i in range(NrPoints):
         cover[:2, i] = ref_cover[i]
@@ -303,12 +299,9 @@ def main():
         cv2.namedWindow(window_name)
 
     # lists for accumulating the tracking error and fps for all the frames
-    tracking_errors = []
     tracking_fps = []
 
     for frame_id in range(1, no_of_frames):
-        
-        
         print("frame_id:",frame_id)
         ret, src_img = cap.read()
         if not ret:
@@ -316,9 +309,8 @@ def main():
             break
 
         start_time = time.process_time()
-        """update the tracker with the current frame"""
+        # update the tracker with the current frame
         tracker_corners = updateTracker(src_img)
-        #print(tracker_corners.shape)
 
         X_P = np.ones((3, NrPoints))
         for i in range(NrPoints):
@@ -338,7 +330,6 @@ def main():
         tracking_fps.append(current_fps)
 
         # compute the tracking error
-
         if overall_homography is not None:
             pass
 
@@ -369,10 +360,6 @@ def main():
             if key == 27:#if ESC is pressed, exit loop
                 cv2.destroyAllWindows()
                 break            
-            #if cv2.waitKey(1) == 27:
-                
-                #break
-                # print 'curr_error: ', curr_error
 
     result_file.close()
 
@@ -397,7 +384,6 @@ def render(img, obj, projection, model, color=False):
         
         dst = cv2.perspectiveTransform(points.reshape(-1, 1, 3), projection)
         
-        
         imgpts = np.int32(dst)
         if color is False:
             #cv2.fillPoly()
@@ -416,7 +402,7 @@ def render_with_bar_param(img, obj, projection, model, color=False):
     """
     Render a loaded obj model into the current video frame
     """
-    rati,sca,x_rot,y_rot,z_rot,pr_down,t_x,t_y,t_z = read_bar_info()
+    rati, sca, x_rot, y_rot, z_rot, pr_down, t_x, t_y, t_z = read_bar_info()
     
     rot_mat_x = AnglesToRotationMatrix("x",x_rot)
     rot_mat_y = AnglesToRotationMatrix("y",y_rot)
@@ -428,12 +414,10 @@ def render_with_bar_param(img, obj, projection, model, color=False):
     h, w = model.shape
     h = h
     w = w
-    
-    
+
     for face in obj.faces:
         face_vertices = face[0]
         points = np.array([vertices[vertex - 1] for vertex in face_vertices])
-        
         
         points = np.dot(points, scale_matrix)
         points = np.dot(points, rot_mat_x)
@@ -441,7 +425,6 @@ def render_with_bar_param(img, obj, projection, model, color=False):
         points = np.dot(points, rot_mat_z)
         
         points += np.array([t_x,t_y,t_z]).reshape(1,3)
-        # print("face_vertices:\n",points)
         
         # render model in the middle of the reference surface. To do so,
         # model points must be displaced
@@ -453,6 +436,8 @@ def render_with_bar_param(img, obj, projection, model, color=False):
         imgpts = np.int32(dst)
         
         if color is False:
+            # color_buffer = randint(0, 256)
+            # random_color = (color_buffer, color_buffer, color_buffer)
             cv2.fillConvexPoly(img, imgpts, DEFAULT_COLOR)
             #cv2.fillPoly(img, [imgpts],1)
             cv2.polylines(img, imgpts, isClosed=True, color=0, thickness=4,
