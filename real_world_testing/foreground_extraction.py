@@ -1,3 +1,4 @@
+import PIL
 from torchvision import models
 import torchvision.transforms as T
 from PIL import Image
@@ -89,9 +90,9 @@ def crop(image, source, nc=21):
 def modify(img):
     ''' Use the below commented code to upload an image using colab.upload in colab notebook but then 
     there is no need to use img parameter and source parameter while using crop function'''
-    plt.imshow(img) 
-    plt.axis('off') 
-    plt.show()
+    # plt.imshow(img) 
+    # plt.axis('off') 
+    # plt.show()
     trf = T.Compose([
         T.Resize(640),
         T.ToTensor(),
@@ -104,21 +105,36 @@ def modify(img):
     inp_im = inp.resize(inp.shape[2],inp.shape[3],inp.shape[1]).detach().cpu().numpy()
     print("inp:",inp.resize(inp.shape[2],inp.shape[3],inp.shape[1]).detach().cpu().numpy().shape)
     
-    plt.imshow(inp_im);plt.show()
+    # plt.imshow(inp_im);plt.show()
     out = dlab(inp)['out']
     om = torch.argmax(out.squeeze(), dim=0).detach().cpu().numpy()
     result = decode_segmap(om) # use result = crop(om,source) while using crop function discussed later
-    plt.imshow(result); plt.axis('off'); plt.show()
+    # plt.imshow(result); plt.axis('off'); plt.show()
     return result
 
 dlab = models.segmentation.deeplabv3_resnet101(pretrained=1).eval()
 
+dlab2 = models.segmentation.deeplabv3_resnet50(pretrained=1).eval()
 
-img = Image.open('pinyon-jay-bird.jpg')
-img = Image.open("00012.jpg")
-plt.imshow(img); plt.axis('off'); plt.show()
-result = modify(img)
-print(result.shape)
+img = Image.open('./real_world_testing/pinyon-jay-bird.jpg')
+img = Image.open("./real_world_testing/cam.jpg")
+# plt.imshow(img); plt.axis('off'); plt.show()
+for i in range(8):
+    img = Image.open("./Pix2Vox-master/test_real_world2/chairs/{}.jpg".format(i))
+    result = modify(img)
+    print(result.shape)
+    plt.imshow(result); plt.show()
 
-
-plt.imshow(result); plt.show()
+# cam = cv2.VideoCapture('./Pix2Vox-master/test_real_world2/screen.mp4')
+# frames = []
+# while True:
+#     ret, frame = cam.read()
+#     if not ret:
+#         print("failed to grab frame")
+#         break
+#     frame = Image.fromarray(frame)
+#     frames.append(frame)
+#     result = modify(frame)
+#     print(result.shape)
+#     cv2.imshow(result)
+print("end")
