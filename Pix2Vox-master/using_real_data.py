@@ -82,9 +82,9 @@ def decode_segmap(image, nc=21):
 
 def get_chair(image, mask):
     idx = mask != 9
-    image[idx, 0] = 0
-    image[idx, 1] = 0
-    image[idx, 2] = 0
+    image[idx, 0] = 1
+    image[idx, 1] = 1
+    image[idx, 2] = 1
 
 def crop(image, source, nc=21):
     label_colors = np.array([
@@ -169,6 +169,7 @@ img = Image.open("./real_world_testing/cam.jpg")
 results = []
 for i in range(8):
     img = Image.open("./Pix2Vox-master/test_real_world2/chairs/{}.jpg".format(i))
+    img.putalpha(255)
     m = mask(img)
     im = np.asarray(T.Resize(640)(img))
     get_chair(im, m)
@@ -215,7 +216,7 @@ with torch.no_grad():
     path_img = './Pix2Vox-master/test_recons'
     # path_img = './test_real_world2'
     ft = 'png'
-    ft = 'jpg'
+    # ft = 'jpg'
     imgs = loadImgs_plus(path_img, ft, grayscale=False)
     imgs = results
     print("imgs shape:", imgs.shape)
