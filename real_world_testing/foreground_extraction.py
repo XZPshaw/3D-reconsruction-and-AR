@@ -82,7 +82,7 @@ def crop(image, source, nc=21):
     return outImage/255
 
 
-def modify():
+def modify(img):
     ''' Use the below commented code to upload an image using colab.upload in colab notebook but then 
     there is no need to use img parameter and source parameter while using crop function'''
 
@@ -96,17 +96,26 @@ def modify():
                    T.ToTensor(),
                      T.Normalize(mean = [0.485, 0.456, 0.406], 
                                  std = [0.229, 0.224, 0.225])])
+    
     inp = trf(img).unsqueeze(0)
+    
+    inp_im = inp.resize(inp.shape[2],inp.shape[3],inp.shape[1]).detach().cpu().numpy()
+    print("inp:",inp.resize(inp.shape[2],inp.shape[3],inp.shape[1]).detach().cpu().numpy().shape)
+    
+    plt.imshow(inp_im);plt.show()
     out = dlab(inp)['out']
     om = torch.argmax(out.squeeze(), dim=0).detach().cpu().numpy()
     result = decode_segmap(om) # use result = crop(om,source) while using crop function discussed later
     plt.imshow(result); plt.axis('off'); plt.show()
+    return result
 
 dlab = models.segmentation.deeplabv3_resnet101(pretrained=1).eval()
 
 
-img = Image.open('download.png')
+img = Image.open('pinyon-jay-bird.jpg')
+img = Image.open("00012.jpg")
 plt.imshow(img); plt.axis('off'); plt.show()
-modify()
+result = modify(img)
+print(result.shape)
 
-
+plt.imshow(result); plt.show()
