@@ -161,7 +161,7 @@ def updateTracker(img):
     # parameters for lucas kanade optical flow
     lk_params = dict(winSize=(32, 32),
                      maxLevel=8,
-                     criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 9, 0.02555))
+                     criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 9, 0.03))
     p1, st, err = cv2.calcOpticalFlowPyrLK(old_frame, frame_img, p0, None, **lk_params)
     old_frame = frame_img.copy()
     p0 = p1.copy()
@@ -208,14 +208,14 @@ def main():
     path_img = './input_scene'
     ft = 'jpg'
     # ft = 'png'
-    imgs = loadImgs_plus(path_img, ft, grayscale=False)
-    print("imgs shape:", imgs.shape)
+    #imgs = loadImgs_plus(path_img, ft, grayscale=False)
+    #print("imgs shape:", imgs.shape)
 
     NrPoints = 4
 
     cover_path = 'BlackBackGround.jpg'
     # read the ground truth
-    cover_path = 'pure_bookCover.jpg'
+    cover_path = 'ar_tag.png'
     book_cover = cv2.imread(str(cover_path))
     plt.imshow(book_cover)
 
@@ -225,18 +225,40 @@ def main():
     for i in range(NrPoints):
         cover[:2, i] = ref_cover[i]
 
-    # path = seq_name + '/frame%05d.jpg' % 1
-    path = seq_name + '/%05d.jpg' % 0
-    no_of_frames = imgs.shape[0]
-    img_base_frame = cv2.imread(str(path))
-    print(path)
+    ## path = seq_name + '/frame%05d.jpg' % 1
+    #path = seq_name + '/%05d.jpg' % 0
+    ##no_of_frames = imgs.shape[0]
+    #img_base_frame = cv2.imread(str(path))
+    #print(path)
+    #plt.imshow(img_base_frame)
+    #ref = plt.ginput(NrPoints)
+    #print(ref)
+
+
+    cap = cv2.VideoCapture(0)
+    cv2.namedWindow("capture frame")    
+    while True:
+        # read the current frame
+        ret, frame = cap.read()
+        if not ret:
+            print("failed to capture the image")
+            return 
+        
+        cv2.imshow("Press ESC to captured initial position for tracking", frame)
+    
+        k = cv2.waitKey(1)
+        if k % 256 == 27:
+            # ASCII:ESC pressed
+            ret = ret
+            img_base_frame = frame
+            init_img = frame
+            print("Escape hit, closing...")
+            break   
+        
     plt.imshow(img_base_frame)
     ref = plt.ginput(NrPoints)
-    print(ref)
-
-    result_file = open(result_fname, 'w')
-
-    cap = cv2.VideoCapture()
+    print(ref)           
+    
     if not cap.open(src_fname):
         print('The video file ', src_fname, ' could not be opened')
         sys.exit()
@@ -247,14 +269,14 @@ def main():
     ground_truth_color = (0, 255, 0)
     # tracker location drawn in red
     result_color = (0, 0, 255)
-
-    print('no_of_frames: ', no_of_frames)
-
+    
+    """
     ret, init_img = cap.read()
     if not ret:
         print("Initial frame could not be read")
         sys.exit(0)
-
+    """
+    
     # extract the true corners in the first frame and place them into a 2x4 array
     init_corners = [list(ref[0]),
                     list(ref[1]),
@@ -267,29 +289,32 @@ def main():
     # X_P = np.ones((3, NrPoints))
     for i in range(NrPoints):
         X[:2, i] = ref[i]
-    cover_homography = find_homography(cover, X, NrPoints, norm='euclidean',normalization=False)
+    cover_homography = find_homography(cover, X, NrPoints, norm='euclidean',normalization=True)
     print("cover_homography",cover_homography)
     init_corners = np.array(init_corners).T
     # write the initial corners to the result file
-    writeCorners(result_file, init_corners)
     
     #apply_homography(book_cover, img_base_frame,cover_homography, fit_origin=True)
     # initialize tracker with the first frame and the initial corners
     initTracker(init_img, init_corners)
 
-    model = cv2.imread('reference/model.jpg', 0)
+    model = cv2.imread('ar_tag.png', 0)
 
     test_projection = projection_matrix(camera_parameters, cover_homography)
-    test_frame = render_with_bar_param(img_base_frame, obj, test_projection, model, False)
+    image_base_frame_copy = img_base_frame    
+    test_frame = render_with_bar_param(image_base_frame_copy, obj, test_projection, model, False)
     
     while True:
         cv2.imshow("Experienment for the projected param", test_frame)
         
         key = cv2.waitKey(5)
         if key == 32:
-            img_base_frame = cv2.imread(str(path))
-            test_frame = render_with_bar_param(img_base_frame, obj, test_projection, model, False)
+            #img_base_frame = cv2.imread(str(path))
+            image_base_frame_copy = img_base_frame
+            test_frame = render_with_bar_param(image_base_frame_copy, obj, test_projection, model, False)
         elif key == 27:
+            cv2.destroyWindow("Experienment for the projected param")
+         
             break
         
         
@@ -300,24 +325,73 @@ def main():
 
     # lists for accumulating the tracking error and fps for all the frames
     tracking_fps = []
-    cap.release()
-    cv2.destroyAllWindows()    
+
+    frame_id = 0
     cap = cv2.VideoCapture(0)
-    
+    cv2.namedWindow("capture frame")      
     while True:
-        cap = cv2.VideoCapture()
         ret, src_img = cap.read()
         if not ret:
-            print("Unable to capture video")
-            return         
-    
+            print("failed to capture the image")
+            return 
+        start_time = time.process_time()
+        # update the tracker with the current frame
         tracker_corners = updateTracker(src_img)
 
         X_P = np.ones((3, NrPoints))
         for i in range(NrPoints):
             X_P[:2, i] = tracker_corners[:, i]
-        tracker_homography = find_homography(X, X_P, NrPoints, norm="euclidean",normalization=False)
+
+        tracker_homography = find_homography(X, X_P, NrPoints, norm="euclidean",normalization=True)
         
+        print("tracker_homography",tracker_homography)
+        overall_homography = tracker_homography.dot(cover_homography)
+        end_time = time.process_time() + 1
+
+        # write the current tracker location to the result text file
+
+        # compute the tracking fps
+        current_fps = 1.0 / (end_time - start_time)
+        tracking_fps.append(current_fps)
+
+        # compute the tracking error
+        if overall_homography is not None:
+            pass
+
+        # obtain 3D projection matrix from homography matrix and camera parameters
+        projection = projection_matrix(camera_parameters, overall_homography)
+        # project cube or model
+        #frame = render(src_img, obj, projection, model, False)
+        frame = render_with_bar_param(src_img, obj, projection, model, False)
+        
+        if show_tracking_output:
+            # draw the tracker location
+            drawRegion(src_img, tracker_corners, result_color, thickness)
+            # write statistics (error and fps) to the image
+            # display the image
+            center_line_color = (0, 255, 255)
+            #cv2.imwrite('./Q4Output/src_img%05d.jpg' % frame_id, src_img)
+            frame_id += 1
+            #warped_cover = apply_homography(book_cover, src_img,overall_homography, fit_origin=True, get_image = True)
+            #cv2.imwrite('./Q4Output/warped_cover%05d.jpg' % frame_id, warped_cover)
+            
+            #added_image = cv2.addWeighted(src_img,0.6,warped_cover,0.7,0)
+            cv2.imshow(window_name, frame)                        
+
+            
+            key = cv2.waitKey(100)#pauses for 3 seconds before fetching next image
+            if key == 27:#if ESC is pressed, exit loop
+                cv2.destroyAllWindows()
+                break            
+
+    """
+    for frame_id in range(1, no_of_frames):
+        print("frame_id:",frame_id)
+        ret, src_img = cap.read()
+        if not ret:
+            print("Frame ", frame_id, " could not be read")
+            break
+
         start_time = time.process_time()
         # update the tracker with the current frame
         tracker_corners = updateTracker(src_img)
@@ -370,8 +444,7 @@ def main():
             if key == 27:#if ESC is pressed, exit loop
                 cv2.destroyAllWindows()
                 break            
-
-    result_file.close()
+    """
 
 
 def render(img, obj, projection, model, color=False):
