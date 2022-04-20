@@ -356,7 +356,7 @@ def main():
             #cv2.imwrite('./Q4Output/added_image%05d.jpg' % frame_id, added_image)
             
             
-            key = cv2.waitKey(500)#pauses for 3 seconds before fetching next image
+            key = cv2.waitKey(100)#pauses for 3 seconds before fetching next image
             if key == 27:#if ESC is pressed, exit loop
                 cv2.destroyAllWindows()
                 break            
@@ -432,7 +432,7 @@ def render_with_bar_param(img, obj, projection, model, color=False):
         
         dst = cv2.perspectiveTransform(points.reshape(-1, 1, 3), projection)
         
-        print("dst",dst)
+        #print("dst",dst)
         imgpts = np.int32(dst)
         
         if color is False:
@@ -479,7 +479,7 @@ def projection_matrix(camera_parameters, homography):
     # finally, compute the 3D projection matrix from the model to the current frame
     projection = np.stack((rot_1, rot_2, rot_3, translation)).T
 
-    print("projection matrix:\n", projection)
+    #print("projection matrix:\n", projection)
     return np.dot(camera_parameters, projection)
 
 

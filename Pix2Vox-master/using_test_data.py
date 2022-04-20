@@ -25,6 +25,7 @@ from config import cfg
 
 import pytorch3d.ops
 import pytorch3d.io
+import datetime
 
 def loadImgs_plus(path_im, keyword="", grayscale=False):
     fs = []
@@ -86,7 +87,9 @@ with torch.no_grad():
     # Get data from data loader
     output_dir = "./result"
     path_img = './test_recons'
+    path_img = './test_real_world'
     ft = 'png'
+    ft = 'jpg'
     imgs = loadImgs_plus(path_img, ft, grayscale=False)
     
     print("imgs shape:", imgs.shape)
@@ -106,7 +109,11 @@ with torch.no_grad():
     meshes = pytorch3d.ops.cubify(generated_volume, 0.2)
     verts = meshes.verts_list()[0]
     faces = meshes.faces_list()[0]
-    pytorch3d.io.obj_io.save_obj(os.path.join(output_dir, 'test\\model.obj'), verts, faces)
+    current_time = datetime.datetime.now()
+    current_time = current_time.strftime("%Y_%m_%d_%H_%M_%S")
+
+    print("curr:",current_time)
+    pytorch3d.io.obj_io.save_obj(os.path.join(output_dir, 'test/model%s.obj'%str(current_time)),verts,faces)
 
     gv = generated_volume.cpu().numpy()
     rendering_views = utils.binvox_visualization.get_volume_views(gv, os.path.join(output_dir, 'test'), epoch_idx)

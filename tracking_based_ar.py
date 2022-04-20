@@ -70,6 +70,7 @@ def main():
             dst_pts = np.float32([kp_frame[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
             # compute Homography
             homography, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
+            print(homography)
             if args.rectangle:
                 # Draw a rectangle that marks the found model in the frame
                 h, w = model.shape
