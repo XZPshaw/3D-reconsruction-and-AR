@@ -17,8 +17,13 @@ import random
 from matplotlib import pyplot as plt
 from q3flag_finalized import find_homography, apply_homography
 from objloader_simple import *
+from OpenGL.GL import *
+from OpenGL.GLU import *
+import pygame, pygame.image
+from pygame.locals import *
 
-DEFAULT_COLOR = (59, 59, 66)
+
+DEFAULT_COLOR = (137, 21, 211)
 
 
 def nothing(x):
@@ -63,7 +68,6 @@ cv2.setTrackbarPos(pointDir_bar, barsWindow, 0)
 cv2.setTrackbarPos(t_1, barsWindow, 0)
 cv2.setTrackbarPos(t_2, barsWindow, 0)
 cv2.setTrackbarPos(t_3, barsWindow, 0)
-
 
 def loadImgs_plus(path_im, keyword="", grayscale=False):
     fs = []
@@ -214,7 +218,7 @@ def main():
     NrPoints = 4
     # read the ground truth
 
-    cover_path = 'BlackBackGround.jpg'
+    cover_path = 'pure_bookCover.jpg'
     book_cover = cv2.imread(str(cover_path))
     plt.imshow(book_cover)
 
@@ -345,8 +349,7 @@ def main():
         # obtain 3D projection matrix from homography matrix and camera parameters
         projection = projection_matrix(camera_parameters, overall_homography)
         # project cube or model
-        #frame = render(src_img, obj, projection, model, False)
-        frame = render_with_bar_param(src_img, obj, projection, model, False)
+        frame = render(src_img, obj, projection, model, False)
         
         if show_tracking_output:
             # draw the tracker location
@@ -357,15 +360,15 @@ def main():
             cv2.imwrite('./Q4Output/src_img%05d.jpg' % frame_id, src_img)
             
             warped_cover = apply_homography(book_cover, src_img,overall_homography, fit_origin=True, get_image = True)
-            #cv2.imwrite('./Q4Output/warped_cover%05d.jpg' % frame_id, warped_cover)
+            cv2.imwrite('./Q4Output/warped_cover%05d.jpg' % frame_id, warped_cover)
             
             added_image = cv2.addWeighted(src_img,0.6,warped_cover,0.7,0)
             cv2.imshow(window_name, added_image)                        
             #cv2.imshow(window_name, warped_cover)            
-            #cv2.imwrite('./Q4Output/added_image%05d.jpg' % frame_id, added_image)
+            cv2.imwrite('./Q4Output/added_image%05d.jpg' % frame_id, added_image)
             
             
-            key = cv2.waitKey(500)#pauses for 3 seconds before fetching next image
+            key = cv2.waitKey(3000)#pauses for 3 seconds before fetching next image
             if key == 27:#if ESC is pressed, exit loop
                 cv2.destroyAllWindows()
                 break            
@@ -455,14 +458,14 @@ def render_with_bar_param(img, obj, projection, model, color=False):
         if color is False:
             cv2.fillConvexPoly(img, imgpts, DEFAULT_COLOR)
             #cv2.fillPoly(img, [imgpts],1)
-            cv2.polylines(img, imgpts, isClosed=True, color=0, thickness=4,
-                          lineType=cv2.LINE_4)              
+            cv2.polylines(img, imgpts, isClosed=True, color=0, thickness=2,
+                          lineType=cv2.LINE_8)              
         else:
             color = hex_to_rgb(face[-1])
             color = color[::-1]  # reverse
             cv2.fillConvexPoly(img, imgpts, color)
             cv2.polylines(img, imgpts, isClosed=True, color=0, thickness=2,
-                          lineType=cv2.LINE_4)            
+                          lineType=cv2.LINE_8)            
             #cv2.fillPoly(img, [imgpts],color)
     return img
 
@@ -540,6 +543,58 @@ def AnglesToRotationMatrix(axis,theta_angle):
                     [0, 0, 1]
                     ])
     return R
+
+
+
+def set_projection_from_camera(K):
+    """  Set view from a camera calibration matrix. """
+
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+
+    fx = K[0,0]
+    fy = K[1,1]
+    fovy = 2*arctan(0.5*height/fy)*180/pi
+    aspect = (width*fy)/(height*fx)
+
+    # define the near and far clipping planes
+    near = 0.1
+    far = 100.0
+
+    # set perspective
+    gluPerspective(fovy,aspect,near,far)
+    glViewport(0,0,width,height)
+
+
+def set_modelview_from_camera(Rt):
+    """  Set the model view matrix from camera pose. """
+
+    glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity()
+
+    # rotate teapot 90 deg around x-axis so that z-axis is up
+    Rx = array([[1,0,0],[0,0,-1],[0,1,0]])
+
+    # set rotation to best approximation
+    R = Rt[:,:3]
+    U,S,V = linalg.svd(R)
+    R = dot(U,V)
+    R[0,:] = -R[0,:] # change sign of x-axis
+
+    # set translation
+    t = Rt[:,3]
+
+    # setup 4*4 model view matrix
+    M = eye(4)
+    M[:3,:3] = dot(R,Rx)
+    M[:3,3] = t
+
+    # transpose and flatten to get column order
+    M = M.T
+    m = M.flatten()
+
+    # replace model view with the new matrix
+    glLoadMatrixf(m)
 
 if __name__ == '__main__':
     main()
