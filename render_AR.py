@@ -19,7 +19,7 @@ from random import randint
 from q3flag_finalized import find_homography, apply_homography
 from objloader_simple import *
 
-DEFAULT_COLOR = (0, 0, 0)
+DEFAULT_COLOR = (137, 137, 137)
 
 def nothing(x):
     pass
@@ -307,9 +307,8 @@ def main():
             break
 
         start_time = time.process_time()
-        """update the tracker with the current frame"""
+        # update the tracker with the current frame
         tracker_corners = updateTracker(src_img)
-        #print(tracker_corners.shape)
 
         X_P = np.ones((3, NrPoints))
         for i in range(NrPoints):
@@ -430,7 +429,6 @@ def render_with_bar_param(img, obj, projection, model, color=False):
         if color is False:
             # color_buffer = randint(0, 256)
             # random_color = (color_buffer, color_buffer, color_buffer)
-
             cv2.fillConvexPoly(img, imgpts, DEFAULT_COLOR)
             # cv2.fillConvexPoly(img, imgpts, random_color)
         else:
