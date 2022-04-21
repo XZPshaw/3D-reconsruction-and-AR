@@ -31,11 +31,11 @@ scale_bar = 'scale(%)'
 x_bar = 'ratation_x'
 y_bar = 'ratation_y'
 z_bar = 'ratation_z'
-t_1 = "t_x"
-t_2 = "t_y"
-t_3 = "t_z"
+t_1 = "t_x-50"
+t_2 = "t_y-50"
+t_3 = "t_z-50"
 
-pointDir_bar = 'V High'
+pointDir_bar = 'reset_tracker'
 
 
 # create window for the slidebars
@@ -59,15 +59,15 @@ cv2.setTrackbarPos(x_bar, barsWindow, 0)
 cv2.setTrackbarPos(y_bar, barsWindow, 0)
 cv2.setTrackbarPos(z_bar, barsWindow, 0)
 cv2.setTrackbarPos(pointDir_bar, barsWindow, 0)
-cv2.setTrackbarPos(t_1, barsWindow, 0)
-cv2.setTrackbarPos(t_2, barsWindow, 0)
-cv2.setTrackbarPos(t_3, barsWindow, 0)
+cv2.setTrackbarPos(t_1, barsWindow, 50)
+cv2.setTrackbarPos(t_2, barsWindow, 50)
+cv2.setTrackbarPos(t_3, barsWindow, 50)
 
 
 def loadImgs_plus(path_im, keyword="", grayscale=False):
     fs = []
     fullfs = []
-
+    
     files = os.listdir(path_im)
     print(path_im)
     files.sort(key=lambda f: int(re.sub('\D', '', f)))
@@ -99,38 +99,6 @@ def loadImgs_plus(path_im, keyword="", grayscale=False):
     return imgs
 
 
-def readTrackingData(filename):
-    if not os.path.isfile(filename):
-        print("Tracking data file not found:\n ", filename)
-        sys.exit()
-
-    data_file = open(filename, 'r')
-    lines = data_file.readlines()
-    no_of_lines = len(lines)
-    data_array = np.zeros((no_of_lines, 8))
-    line_id = 0
-    for line in lines:
-        words = line.split()[1:]
-        if len(words) != 8:
-            msg = "Invalid formatting on line %d" % line_id + " in file %s" % filename + ":\n%s" % line
-            raise SyntaxError(msg)
-        coordinates = []
-        for word in words:
-            coordinates.append(float(word))
-        data_array[line_id, :] = coordinates
-        line_id += 1
-    data_file.close()
-    return data_array
-
-
-def writeCorners(file_id, corners):
-    # write the given corners to the file
-    corner_str = ''
-    for i in range(4):
-        corner_str = corner_str + '{:5.2f}\t{:5.2f}\t'.format(corners[0, i], corners[1, i])
-    file_id.write(corner_str + '\n')
-
-
 def drawRegion(img, corners, color, thickness=1):
     # draw the bounding box specified by the given corners
     for i in range(4):
@@ -159,9 +127,21 @@ def updateTracker(img):
     global p0
     frame_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # parameters for lucas kanade optical flow
+    
+    lk_params = dict(winSize=(15, 15),
+                     maxLevel=8,
+                     criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 9, 0.03))    
+    """
     lk_params = dict(winSize=(32, 32),
                      maxLevel=8,
                      criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 9, 0.03))
+    """
+    
+    """
+    _, pyr_old = cv2.buildOpticalFlowPyramid(old_frame, winSize=(15, 15), maxLevel=4)
+    _, pyr_new = cv2.buildOpticalFlowPyramid(frame_img, winSize=(15, 15), maxLevel=4)    
+    p1, st, err = cv2.calcOpticalFlowPyrLK(pyr_old, pyr_new, p0, None, **lk_params)
+    """
     p1, st, err = cv2.calcOpticalFlowPyrLK(old_frame, frame_img, p0, None, **lk_params)
     old_frame = frame_img.copy()
     p0 = p1.copy()
@@ -299,6 +279,7 @@ def main():
     initTracker(init_img, init_corners)
 
     model = cv2.imread('ar_tag.png', 0)
+    model = 1
 
     test_projection = projection_matrix(camera_parameters, cover_homography)
     image_base_frame_copy = img_base_frame    
@@ -361,7 +342,6 @@ def main():
         # obtain 3D projection matrix from homography matrix and camera parameters
         projection = projection_matrix(camera_parameters, overall_homography)
         # project cube or model
-        #frame = render(src_img, obj, projection, model, False)
         frame = render_with_bar_param(src_img, obj, projection, model, False)
         
         if show_tracking_output:
@@ -384,103 +364,6 @@ def main():
                 cv2.destroyAllWindows()
                 break            
 
-    """
-    for frame_id in range(1, no_of_frames):
-        print("frame_id:",frame_id)
-        ret, src_img = cap.read()
-        if not ret:
-            print("Frame ", frame_id, " could not be read")
-            break
-
-        start_time = time.process_time()
-        # update the tracker with the current frame
-        tracker_corners = updateTracker(src_img)
-
-        X_P = np.ones((3, NrPoints))
-        for i in range(NrPoints):
-            X_P[:2, i] = tracker_corners[:, i]
-
-        tracker_homography = find_homography(X, X_P, NrPoints, norm="euclidean",normalization=False)
-        
-        print("tracker_homography",tracker_homography)
-        overall_homography = tracker_homography.dot(cover_homography)
-        end_time = time.process_time() + 1
-
-        # write the current tracker location to the result text file
-        writeCorners(result_file, tracker_corners)
-
-        # compute the tracking fps
-        current_fps = 1.0 / (end_time - start_time)
-        tracking_fps.append(current_fps)
-
-        # compute the tracking error
-        if overall_homography is not None:
-            pass
-
-        # obtain 3D projection matrix from homography matrix and camera parameters
-        projection = projection_matrix(camera_parameters, overall_homography)
-        # project cube or model
-        #frame = render(src_img, obj, projection, model, False)
-        frame = render_with_bar_param(src_img, obj, projection, model, False)
-        
-        if show_tracking_output:
-            # draw the tracker location
-            drawRegion(src_img, tracker_corners, result_color, thickness)
-            # write statistics (error and fps) to the image
-            # display the image
-            center_line_color = (0, 255, 255)
-            cv2.imwrite('./Q4Output/src_img%05d.jpg' % frame_id, src_img)
-            
-            warped_cover = apply_homography(book_cover, src_img,overall_homography, fit_origin=True, get_image = True)
-            #cv2.imwrite('./Q4Output/warped_cover%05d.jpg' % frame_id, warped_cover)
-            
-            added_image = cv2.addWeighted(src_img,0.6,warped_cover,0.7,0)
-            cv2.imshow(window_name, added_image)                        
-            #cv2.imshow(window_name, warped_cover)            
-            #cv2.imwrite('./Q4Output/added_image%05d.jpg' % frame_id, added_image)
-            
-            
-            key = cv2.waitKey(100)#pauses for 3 seconds before fetching next image
-            if key == 27:#if ESC is pressed, exit loop
-                cv2.destroyAllWindows()
-                break            
-    """
-
-
-def render(img, obj, projection, model, color=False):
-    """
-    Render a loaded obj model into the current video frame
-    """
-        
-    vertices = obj.vertices
-    scale_matrix = np.eye(3) * 2
-    h, w = model.shape
-    h = h
-    w = w
-    for face in obj.faces:
-        face_vertices = face[0]
-        points = np.array([vertices[vertex - 1] for vertex in face_vertices])
-        points = np.dot(points, scale_matrix)
-        # render model in the middle of the reference surface. To do so,
-        # model points must be displaced
-        points = np.array([[p[0] + w / 2, p[1] + h / 2, p[2]] for p in points])
-        
-        dst = cv2.perspectiveTransform(points.reshape(-1, 1, 3), projection)
-        
-        imgpts = np.int32(dst)
-        if color is False:
-            #cv2.fillPoly()
-            cv2.fillPoly(img, imgpts, DEFAULT_COLOR)
-            
-            #cv2.fillConvexPoly(img, imgpts, DEFAULT_COLOR)
-        else:
-            color = hex_to_rgb(face[-1])
-            color = color[::-1]  # reverse
-            cv2.fillConvexPoly(img, imgpts, color)
-            cv2.fillPoly(img, imgpts, color)
-
-    return img
-
 def render_with_bar_param(img, obj, projection, model, color=False):
     """
     Render a loaded obj model into the current video frame
@@ -494,9 +377,24 @@ def render_with_bar_param(img, obj, projection, model, color=False):
     
     vertices = obj.vertices
     scale_matrix = np.eye(3) * sca/100
-    h, w = model.shape
-    h = h
-    w = w
+    
+    model_const = 300
+    
+    #case1: the surface is a square
+    if model == 1:
+        h = model_const
+        w = model_const
+    #case2: the surface is rectangle with hight greater than width
+    elif model == 2:
+        h = model_const * 1.5
+        w = model_const
+        
+    elif model == 3:
+        h = model_const
+        w = model_const * 1.5
+    #h, w = model.shape
+    #h = h
+    #w = w
 
     for face in obj.faces:
         face_vertices = face[0]
@@ -522,7 +420,6 @@ def render_with_bar_param(img, obj, projection, model, color=False):
             # color_buffer = randint(0, 256)
             # random_color = (color_buffer, color_buffer, color_buffer)
             cv2.fillConvexPoly(img, imgpts, DEFAULT_COLOR)
-            #cv2.fillPoly(img, [imgpts],1)
             cv2.polylines(img, imgpts, isClosed=True, color=0, thickness=4,
                           lineType=cv2.LINE_4)              
         else:
@@ -531,7 +428,6 @@ def render_with_bar_param(img, obj, projection, model, color=False):
             cv2.fillConvexPoly(img, imgpts, color)
             cv2.polylines(img, imgpts, isClosed=True, color=0, thickness=2,
                           lineType=cv2.LINE_4)            
-            #cv2.fillPoly(img, [imgpts],color)
     return img
 
 def projection_matrix(camera_parameters, homography):
@@ -574,9 +470,10 @@ def read_bar_info():
     y_rot = cv2.getTrackbarPos(y_bar, barsWindow)
     z_rot = cv2.getTrackbarPos(z_bar, barsWindow)
     pr_down = cv2.getTrackbarPos(pointDir_bar, barsWindow)
-    t_x = cv2.getTrackbarPos(t_1, barsWindow)
-    t_y = cv2.getTrackbarPos(t_2, barsWindow)
-    t_z = cv2.getTrackbarPos(t_3, barsWindow)
+    t_x = cv2.getTrackbarPos(t_1, barsWindow) - 50
+    t_y = cv2.getTrackbarPos(t_2, barsWindow) - 50
+    t_z = cv2.getTrackbarPos(t_3, barsWindow) - 50
+    
     return(rati,sca,x_rot,y_rot,z_rot,pr_down,t_x,t_y,t_z)
 
 
