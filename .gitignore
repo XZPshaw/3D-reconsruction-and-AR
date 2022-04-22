@@ -105,3 +105,4 @@ venv.bak/
 
 *.pth
 *.mp4
+./Pix2Vox-master/result/test/*.obj

@@ -80,11 +80,11 @@ def decode_segmap(image, nc=21):
     rgb = np.stack([r, g, b], axis=2)
     return rgb
 
-def get_chair(image, mask):
-    idx = mask != 9
-    image[idx, 0] = 1
-    image[idx, 1] = 1
-    image[idx, 2] = 1
+def get_object(image, mask):
+    # idx = mask != 9 # chair
+    # idx = mask != 2 # bicycle
+    idx= mask != 20
+    image[idx, 3] = 0
 
 def crop(image, source, nc=21):
     label_colors = np.array([
@@ -167,14 +167,42 @@ img = Image.open('./real_world_testing/pinyon-jay-bird.jpg')
 img = Image.open("./real_world_testing/cam.jpg")
 # plt.imshow(img); plt.axis('off'); plt.show()
 results = []
-for i in range(8):
-    img = Image.open("./Pix2Vox-master/test_real_world2/chairs/{}.jpg".format(i))
-    img.putalpha(255)
-    m = mask(img)
-    im = np.asarray(T.Resize(640)(img))
-    get_chair(im, m)
+# for i in range(8):
+#     img = Image.open("./Pix2Vox-master/test_real_world2/chairs/{}.jpg".format(i))
+#     m = mask(img)
+#     im = np.asarray(T.Resize(640)(img))
+#     im = Image.fromarray(im)
+#     im.putalpha(255)
+#     im = np.asarray(im)
+#     get_object(im, m)
+#     # plt.imshow(im); plt.show()
+#     results.append(im)
+cam = cv2.VideoCapture('./Pix2Vox-master/test_real_world2/screen.mp4')
+frame_count = 0
+while True:
+    ret, frame = cam.read()
+    if not ret:
+        print("failed to grab frame")
+        break
+    if frame_count % 30 != 0:
+        frame_count += 1
+        continue
+    else:
+        frame_count += 1
+    
+    frame = Image.fromarray(frame)
+    m = mask(frame)
+
+    im = np.asarray(T.Resize(640)(frame))
+    im = Image.fromarray(im)
+    im.putalpha(255)
+    im = np.asarray(im)
+    get_object(im, m)
     # plt.imshow(im); plt.show()
+    # cv2.imshow("extracted object", im)
+    # cv2.waitKey(1)
     results.append(im)
+
 results = np.asarray(results)
 
 encoder = Encoder(cfg)

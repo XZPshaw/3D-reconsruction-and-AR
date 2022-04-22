@@ -85,11 +85,11 @@ imageTransformation = utils.data_transforms.Compose([
 
 with torch.no_grad():
     # Get data from data loader
-    output_dir = "./result"
+    output_dir = "./Pix2Vox-master/result"
     path_img = './test_recons'
-    path_img = './test_real_world'
+    path_img = './Pix2Vox-master/test_car'
     ft = 'png'
-    ft = 'jpg'
+    # ft = 'jpg'
     imgs = loadImgs_plus(path_img, ft, grayscale=False)
     
     print("imgs shape:", imgs.shape)
