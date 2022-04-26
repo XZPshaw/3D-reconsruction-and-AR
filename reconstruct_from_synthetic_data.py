@@ -78,8 +78,13 @@ def loadImgs_plus(path_im, keyword="", grayscale=False):
         print("loading file:", fs[i], end='\r')
         if grayscale:
             im = cv2.imread(fullfs[i], 0)   
+            im = cv2.resize(im,(137,137))
+            
         else:
             im = cv2.imread(fullfs[i], cv2.IMREAD_UNCHANGED).astype(np.float32) / 255.0
+            
+            im = cv2.resize(im,(137,137))
+            
         imgs.append(im)
     
     return np.asarray(imgs)

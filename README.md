@@ -1,19 +1,30 @@
 # 3D shape reconstruction and view through augmented-reality
 3D shape reconsruction with silouette-based refinement and viewed thruogh tracking based Augmented reality
 
-## How to use our code
-
-
 
 ### 3d reconstruction step
 
 our silouette guidance implementation is in ./core/train.py
 
-
 download the the trained model parameters using shapeNet
 
 https://drive.google.com/file/d/1WyX_saoFLxbwDv3X-suphDWGGQy0TUz_/view?usp=sharing
 
+
+(optional) download the captured images from single or multi view about ShapeNet models
+
+http://cvgl.stanford.edu/data2/ShapeNetRendering.tgz
+
+
+to train your own parameters, download the ShapeNet rendering images and also ground truth voxlized model http://cvgl.stanford.edu/data2/ShapeNetVox32.tgz
+
+Specify the two lines below in config.py to your local path, and run python3 runner.py
+
+__C.DATASETS.SHAPENET.RENDERING_PATH        = '/path/to/Datasets/ShapeNet/ShapeNetRendering/%s/%s/rendering/%02d.png'
+
+__C.DATASETS.SHAPENET.VOXEL_PATH            = '/path/to/Datasets/ShapeNet/ShapeNetVox32/%s/%s/model.binvox'
+
+1.
 
 python3 reconstrcut_from_synthetic_data.py 
 
@@ -36,6 +47,13 @@ The path of the trained model use to perform the 3D reconstruction task
 the file type of input image(s), usually png or jpg, by default it will be jpg
 
 
+2.
+
+python3 reconstruct_from_real_data.py
+
+The command arguments and usage are identical as previous one, the only difference is one foreground extraction is used in order to reconstruct from real-world images.
+
+However, the performance is not good for real world ones.
 
 ### live Augmented reality step
 python3 live_ar_render.py 
