@@ -87,7 +87,8 @@ with torch.no_grad():
     # Get data from data loader
     output_dir = "./result"
     path_img = './test_recons'
-    path_img = './test_real_world'
+    path_img = './test_table'
+    path_img = '/'
     ft = 'png'
     ft = 'jpg'
     imgs = loadImgs_plus(path_img, ft, grayscale=False)

@@ -28,7 +28,7 @@ from q3flag_finalized import find_homography, apply_homography
 
 # Minimum number of matches that have to be found
 # to consider the recognition valid
-MIN_MATCHES = 30
+MIN_MATCHES = 15
 DEFAULT_COLOR = (0, 0, 0)
 
 
@@ -51,6 +51,7 @@ def main():
     
     reference = 'reference/model.jpg'
     reference = "reference/AR_tag.png"
+    reference = "reference/april_tag163.jpg"
     
     model = cv2.imread(os.path.join(dir_name, reference), 0)
     cv2.imshow("reference", model)
@@ -67,8 +68,7 @@ def main():
         if not ret:
             print("Unable to capture video")
             return 
-        
-        
+
         
         # find and draw the keypoints of the frame
         kp_frame, des_frame = orb.detectAndCompute(frame, None)

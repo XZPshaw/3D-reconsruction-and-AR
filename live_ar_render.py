@@ -3,7 +3,7 @@ Todo1: user can choose ratio of the template/cover and set length ?
 
 """
 
-
+from argparse import ArgumentParser
 import os
 import sys
 import cv2
@@ -17,6 +17,7 @@ from random import randint
 from q3flag_finalized import find_homography, apply_homography
 from objloader_simple import *
 
+
 DEFAULT_COLOR = (59, 59, 66)
 
 
@@ -24,9 +25,45 @@ def nothing(x):
     pass
 
 
+def get_args_from_command_line():
+    parser = ArgumentParser(description='params for AR')
+    parser.add_argument('--obj',
+                        dest='obj',
+                        help='Path_of_obj_file_to_render_in_AR',
+                        default='./Pix2Vox-master/result/test/model.obj',
+                        type=str)
+
+    parser.add_argument('--test_user_param_before_rendering',
+                        dest='test_param',
+                        help='if test the interactive parameters before live tracking and ar rendering,0 for no, 1 for yes',
+                        default=0,
+                        type=int)
+    
+    parser.add_argument('--intrinsic',
+                        dest='intrinsic',
+                        nargs='+',
+                        help='intrinsic parameters of your camera',
+                        default=[715,715,320,240],
+                        type=int)
+    
+    parser.add_argument('--template_type',
+                        dest='template_type',
+                        help='template type,1 for square, 2 for rectangle with height greater than width, 3 for rectangle with width greater than height',
+                        default=1,
+                        type=int)    
+
+    parser.add_argument('--camera_id',
+                        dest='camera_id',
+                        help='camera_id used for open cv camera capture',
+                        default=0,
+                        type=int)  
+    
+    args = parser.parse_args()
+    return args
+
 # named ites for easy reference
 barsWindow = 'Bars'
-ratio_bar = 'ratio'
+ratio_bar = 'ratio(%)'
 scale_bar = 'scale(%)'
 x_bar = 'ratation_x'
 y_bar = 'ratation_y'
@@ -34,7 +71,9 @@ z_bar = 'ratation_z'
 t_1 = "t_x-50"
 t_2 = "t_y-50"
 t_3 = "t_z-50"
-
+r = "red"
+g = "green"
+b = "blue"
 pointDir_bar = 'reset_tracker'
 
 
@@ -42,8 +81,8 @@ pointDir_bar = 'reset_tracker'
 cv2.namedWindow(barsWindow, flags = cv2.WINDOW_NORMAL)
 
 # create the sliders
-cv2.createTrackbar(ratio_bar, barsWindow, 0, 5, nothing)
-cv2.createTrackbar(scale_bar, barsWindow, 0, 40000, nothing)
+cv2.createTrackbar(ratio_bar, barsWindow, 0, 300, nothing)
+cv2.createTrackbar(scale_bar, barsWindow, 0, 4000, nothing)
 cv2.createTrackbar(x_bar, barsWindow, 0, 360, nothing)
 cv2.createTrackbar(y_bar, barsWindow, 0, 360, nothing)
 cv2.createTrackbar(z_bar, barsWindow, 0, 360, nothing)
@@ -51,6 +90,9 @@ cv2.createTrackbar(pointDir_bar, barsWindow, 0, 1, nothing)
 cv2.createTrackbar(t_1, barsWindow, -100, 100, nothing)
 cv2.createTrackbar(t_2, barsWindow, -100, 100, nothing)
 cv2.createTrackbar(t_3, barsWindow, -100, 100, nothing)
+cv2.createTrackbar(r, barsWindow, 0, 255, nothing)
+cv2.createTrackbar(g, barsWindow, 0, 255, nothing)
+cv2.createTrackbar(b, barsWindow, 0, 255, nothing)
 
 # set initial values for sliders
 cv2.setTrackbarPos(ratio_bar, barsWindow, 1)
@@ -62,6 +104,11 @@ cv2.setTrackbarPos(pointDir_bar, barsWindow, 0)
 cv2.setTrackbarPos(t_1, barsWindow, 50)
 cv2.setTrackbarPos(t_2, barsWindow, 50)
 cv2.setTrackbarPos(t_3, barsWindow, 50)
+cv2.setTrackbarPos(r, barsWindow, 59)
+cv2.setTrackbarPos(g, barsWindow, 59)
+cv2.setTrackbarPos(b, barsWindow, 59)
+
+args = get_args_from_command_line()
 
 
 def loadImgs_plus(path_im, keyword="", grayscale=False):
@@ -128,8 +175,8 @@ def updateTracker(img):
     frame_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # parameters for lucas kanade optical flow
     
-    lk_params = dict(winSize=(15, 15),
-                     maxLevel=8,
+    lk_params = dict(winSize=(40, 40),
+                     maxLevel=7,
                      criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 9, 0.03))    
     """
     lk_params = dict(winSize=(32, 32),
@@ -155,14 +202,24 @@ def main():
     addded part for model projection preparation
 
     """
-    camera_parameters = np.array([[1430, 0, 480], [0, 1430, 620], [0, 0, 1]])
+    #camera_parameters = np.array([[1430, 0, 480], [0, 1430, 640], [0, 0, 1]])
+    print(args)
+    cam_intrinsic = args.intrinsic
+    
+    camera_parameters = np.array([[715, 0, 320], [0, 715, 240], [0, 0, 1]])
+    
+    camera_parameters = np.array([[cam_intrinsic[0], 0, cam_intrinsic[2]], [0, cam_intrinsic[1], cam_intrinsic[3]], [0, 0, 1]])
+    
     #camera_parameters = np.array([[715, 0, 480], [0, 715, 620], [0, 0, 1]])
     
+    obj_path = './Pix2Vox-master/result/test/model.obj'
     # Load 3D model from OBJ file
     #obj = OBJ('models/fox.obj', swapyz=True)
     # obj = OBJ('low-poly-fox-by-pixelmannen.obj', swapyz=True,texture_file='texture.png')
     # obj = OBJ('./Pix2Vox-master/result/test/model.obj', swapyz=True,texture_file='texture.png')
-    obj = OBJ('./Pix2Vox-master/result/test/model.obj', swapyz=True)
+    
+    obj_path = args.obj
+    obj = OBJ(obj_path, swapyz=True)
     # obj = OBJ('low-poly-fox-by-pixelmannen.obj', swapyz=True,texture_file= None)
     
     ################## if apply ar to existing video
@@ -171,29 +228,11 @@ def main():
     end of this part
     """
 
-    sequences = ['input_scene']
-    seq_id = 0
-
-    write_stats_to_file = 0
     show_tracking_output = 1
-
-    seq_name = sequences[seq_id]
-    print('seq_id: ', seq_id)
-    print('seq_name: ', seq_name)
-
-    #src_fname = seq_name + '/frame%05d.jpg'
-    src_fname = seq_name + '/%05d.jpg'
-    result_fname = seq_name + '_res.txt'
-
-    path_img = './input_scene'
-    ft = 'jpg'
-    # ft = 'png'
-    #imgs = loadImgs_plus(path_img, ft, grayscale=False)
-    #print("imgs shape:", imgs.shape)
 
     NrPoints = 4
 
-    cover_path = 'BlackBackGround.jpg'
+    #cover_path = 'BlackBackGround.jpg'
     # read the ground truth
     cover_path = 'ar_tag.png'
     book_cover = cv2.imread(str(cover_path))
@@ -205,17 +244,11 @@ def main():
     for i in range(NrPoints):
         cover[:2, i] = ref_cover[i]
 
-    ## path = seq_name + '/frame%05d.jpg' % 1
-    #path = seq_name + '/%05d.jpg' % 0
-    ##no_of_frames = imgs.shape[0]
-    #img_base_frame = cv2.imread(str(path))
-    #print(path)
-    #plt.imshow(img_base_frame)
-    #ref = plt.ginput(NrPoints)
-    #print(ref)
 
 
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    cap.set(cv2.CAP_PROP_FPS, 60)    
     cv2.namedWindow("capture frame")    
     while True:
         # read the current frame
@@ -233,15 +266,15 @@ def main():
             img_base_frame = frame
             init_img = frame
             print("Escape hit, closing...")
+            cv2.destroyWindow("capture frame")
+            cv2.destroyWindow("Press ESC to captured initial position for tracking")
             break   
         
     plt.imshow(img_base_frame)
     ref = plt.ginput(NrPoints)
     print(ref)           
-    
-    if not cap.open(src_fname):
-        print('The video file ', src_fname, ' could not be opened')
-        sys.exit()
+    plt.close()
+
 
     # thickness of the bounding box lines drawn on the image
     thickness = 2
@@ -274,29 +307,29 @@ def main():
     init_corners = np.array(init_corners).T
     # write the initial corners to the result file
     
-    #apply_homography(book_cover, img_base_frame,cover_homography, fit_origin=True)
     # initialize tracker with the first frame and the initial corners
     initTracker(init_img, init_corners)
 
     model = cv2.imread('ar_tag.png', 0)
-    model = 1
+    #model = 1
 
     test_projection = projection_matrix(camera_parameters, cover_homography)
-    image_base_frame_copy = img_base_frame    
+    image_base_frame_copy = np.copy(img_base_frame)    
     test_frame = render_with_bar_param(image_base_frame_copy, obj, test_projection, model, False)
-    
-    while True:
-        cv2.imshow("Experienment for the projected param", test_frame)
-        
-        key = cv2.waitKey(5)
-        if key == 32:
-            #img_base_frame = cv2.imread(str(path))
-            image_base_frame_copy = img_base_frame
-            test_frame = render_with_bar_param(image_base_frame_copy, obj, test_projection, model, False)
-        elif key == 27:
-            cv2.destroyWindow("Experienment for the projected param")
-         
-            break
+    if args.test_param == 1:
+        while True:
+            param_testing_win_name = "Experienment for the params, press space button to see the result,press ESC to start live AR rendering"
+            cv2.imshow(param_testing_win_name, test_frame)
+            
+            key = cv2.waitKey(5)
+            if key == 32:
+                #img_base_frame = cv2.imread(str(path))
+                image_base_frame_copy = np.copy(img_base_frame)  
+                test_frame = render_with_bar_param(image_base_frame_copy, obj, test_projection, model, False)
+            elif key == 27:
+                cv2.destroyWindow(param_testing_win_name)
+             
+                break
         
         
     if show_tracking_output:
@@ -305,11 +338,14 @@ def main():
         cv2.namedWindow(window_name)
 
     # lists for accumulating the tracking error and fps for all the frames
-    tracking_fps = []
+    #tracking_fps = []
 
-    frame_id = 0
+    #frame_id = 0
     cap = cv2.VideoCapture(0)
-    cv2.namedWindow("capture frame")      
+    cv2.namedWindow("capture frame") 
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    cap.set(cv2.CAP_PROP_FPS, 60) 
+    
     while True:
         ret, src_img = cap.read()
         if not ret:
@@ -325,15 +361,12 @@ def main():
 
         tracker_homography = find_homography(X, X_P, NrPoints, norm="euclidean",normalization=True)
         
-        print("tracker_homography",tracker_homography)
+        #print("tracker_homography",tracker_homography)
         overall_homography = tracker_homography.dot(cover_homography)
         end_time = time.process_time() + 1
 
         # write the current tracker location to the result text file
 
-        # compute the tracking fps
-        current_fps = 1.0 / (end_time - start_time)
-        tracking_fps.append(current_fps)
 
         # compute the tracking error
         if overall_homography is not None:
@@ -346,12 +379,11 @@ def main():
         
         if show_tracking_output:
             # draw the tracker location
-            drawRegion(src_img, tracker_corners, result_color, thickness)
+            #drawRegion(src_img, tracker_corners, result_color, thickness)
             # write statistics (error and fps) to the image
             # display the image
             center_line_color = (0, 255, 255)
             #cv2.imwrite('./Q4Output/src_img%05d.jpg' % frame_id, src_img)
-            frame_id += 1
             #warped_cover = apply_homography(book_cover, src_img,overall_homography, fit_origin=True, get_image = True)
             #cv2.imwrite('./Q4Output/warped_cover%05d.jpg' % frame_id, warped_cover)
             
@@ -359,7 +391,7 @@ def main():
             cv2.imshow(window_name, frame)                        
 
             
-            key = cv2.waitKey(100)#pauses for 3 seconds before fetching next image
+            key = cv2.waitKey(1)#pauses for 3 seconds before fetching next image
             if key == 27:#if ESC is pressed, exit loop
                 cv2.destroyAllWindows()
                 break            
@@ -368,7 +400,8 @@ def render_with_bar_param(img, obj, projection, model, color=False):
     """
     Render a loaded obj model into the current video frame
     """
-    rati, sca, x_rot, y_rot, z_rot, pr_down, t_x, t_y, t_z = read_bar_info()
+    rati, sca, x_rot, y_rot, z_rot, pr_down, t_x, t_y, t_z, r,g,b = read_bar_info()
+    
     
     rot_mat_x = AnglesToRotationMatrix("x",x_rot)
     rot_mat_y = AnglesToRotationMatrix("y",y_rot)
@@ -376,25 +409,28 @@ def render_with_bar_param(img, obj, projection, model, color=False):
     
     
     vertices = obj.vertices
-    scale_matrix = np.eye(3) * sca/100
+    scale_matrix = np.eye(3) *10 * sca/100
     
     model_const = 300
     
     #case1: the surface is a square
-    if model == 1:
-        h = model_const
-        w = model_const
-    #case2: the surface is rectangle with hight greater than width
-    elif model == 2:
-        h = model_const * 1.5
-        w = model_const
-        
-    elif model == 3:
-        h = model_const
-        w = model_const * 1.5
-    #h, w = model.shape
-    #h = h
-    #w = w
+    if type(model) is int:
+        print("using template")
+        if model == 1:
+            h = model_const
+            w = model_const
+        #case2: the surface is rectangle with hight greater than width
+        elif model == 2:
+            h = model_const * 1.5
+            w = model_const
+            
+        elif model == 3:
+            h = model_const
+            w = model_const * 1.5
+    else :
+        h, w = model.shape
+        h = h
+        w = w
 
     for face in obj.faces:
         face_vertices = face[0]
@@ -419,14 +455,19 @@ def render_with_bar_param(img, obj, projection, model, color=False):
         if color is False:
             # color_buffer = randint(0, 256)
             # random_color = (color_buffer, color_buffer, color_buffer)
+            color = (r,g,b)         
+            #cv2.fillConvexPoly(img, imgpts, DEFAULT_COLOR)
+            #color = np.array([r,g,b]) 
             cv2.fillConvexPoly(img, imgpts, DEFAULT_COLOR)
+            
             cv2.polylines(img, imgpts, isClosed=True, color=0, thickness=4,
                           lineType=cv2.LINE_4)              
         else:
-            color = hex_to_rgb(face[-1])
+            #color = hex_to_rgb(face[-1])
             color = color[::-1]  # reverse
+            color = (r,g,b)
             cv2.fillConvexPoly(img, imgpts, color)
-            cv2.polylines(img, imgpts, isClosed=True, color=0, thickness=2,
+            cv2.polylines(img, imgpts, isClosed=True, color=0.8, thickness=2,
                           lineType=cv2.LINE_4)            
     return img
 
@@ -434,6 +475,8 @@ def projection_matrix(camera_parameters, homography):
     """
     From the camera calibration matrix and the estimated homography
     compute the 3D projection matrix
+    
+    input homography matrix will be 3 by 3
     """
     # Compute rotation along the x and y axis as well as the translation
     if homography[0,0] > 0:
@@ -457,10 +500,44 @@ def projection_matrix(camera_parameters, homography):
     rot_3 = np.cross(rot_1, rot_2)
     # finally, compute the 3D projection matrix from the model to the current frame
     projection = np.stack((rot_1, rot_2, rot_3, translation)).T
+    
 
     #print("projection matrix:\n", projection)
     return np.dot(camera_parameters, projection)
 
+
+#def projection_matrix(camera_parameters, homography):
+
+    ##From the camera calibration matrix and the estimated homography
+    ##compute the 3D projection matrix
+    
+    ##input homography matrix will be 3 by 3
+
+    ## Compute rotation along the x and y axis as well as the translation
+    #if homography[0,0] > 0:
+        #homography = homography * (-1)
+    
+    
+    #H = np.dot(np.linalg.inv(camera_parameters), homography)
+    
+    
+    #H1t = H[:, 0]
+    #H2t = H[:, 1]
+    #H3t = H[:, 2]
+    #H1t_norm = np.linalg.norm(H1t, 2)
+    #H2t_norm = np.linalg.norm(H2t, 2)
+    
+    #R1t = H1t/H1t_norm
+    #R2t = H2t/H2t_norm
+    #R3t = np.cross(R1t,R2t)
+    #Tt = 2*H3t/(H1t_norm + H2t_norm)
+    ## normalise vectors
+
+    ## finally, compute the 3D projection matrix from the model to the current frame
+    #projection = np.stack((R1t, R2t, R3t, Tt)).T
+
+    ##print("projection matrix:\n", projection)
+    #return np.dot(camera_parameters, projection)
 
 
 def read_bar_info():
@@ -473,8 +550,11 @@ def read_bar_info():
     t_x = cv2.getTrackbarPos(t_1, barsWindow) - 50
     t_y = cv2.getTrackbarPos(t_2, barsWindow) - 50
     t_z = cv2.getTrackbarPos(t_3, barsWindow) - 50
+    r_c = cv2.getTrackbarPos(r, barsWindow)
+    g_c = cv2.getTrackbarPos(g, barsWindow)
+    b_c = cv2.getTrackbarPos(b, barsWindow)
     
-    return(rati,sca,x_rot,y_rot,z_rot,pr_down,t_x,t_y,t_z)
+    return(rati,sca,x_rot,y_rot,z_rot,pr_down,t_x,t_y,t_z,r_c,g_c,b_c)
 
 
 

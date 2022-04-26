@@ -176,6 +176,8 @@ def main():
 
     """
     camera_parameters = np.array([[1430, 0, 480], [0, 1430, 620], [0, 0, 1]])
+    camera_parameters = np.array([[715, 0, 320], [0, 715, 240], [0, 0, 1]])
+
     #camera_parameters = np.array([[715, 0, 480], [0, 715, 620], [0, 0, 1]])
     
     # Load 3D model from OBJ file
@@ -250,10 +252,7 @@ def main():
 
     print('no_of_frames: ', no_of_frames)
 
-    ret, init_img = cap.read()
-    if not ret:
-        print("Initial frame could not be read")
-        sys.exit(0)
+    #ret, init_img = cap.read()
 
     # extract the true corners in the first frame and place them into a 2x4 array
     init_corners = [list(ref[0]),
@@ -299,17 +298,16 @@ def main():
         cv2.namedWindow(window_name)
 
     # lists for accumulating the tracking error and fps for all the frames
-    tracking_fps = []
-    cap.release()
-    cv2.destroyAllWindows()    
-    cap = cv2.VideoCapture(0)
+    #tracking_fps = []
+    #cap.release()
+    #cv2.destroyAllWindows()    
+    #cap = cv2.VideoCapture(0)
     
-    while True:
-        cap = cv2.VideoCapture()
-        ret, src_img = cap.read()
-        if not ret:
-            print("Unable to capture video")
-            return         
+    for i in range(1, no_of_frames):
+    #swhile True:
+        #cap = cv2.VideoCapture()
+        #ret, src_img = cap.read()
+        src_img = imgs[i]
     
         tracker_corners = updateTracker(src_img)
 
