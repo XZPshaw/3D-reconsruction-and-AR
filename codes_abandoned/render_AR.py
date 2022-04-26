@@ -1,6 +1,5 @@
 """
 Todo1: user can choose ratio of the template/cover and set length ?
-
 """
 
 
@@ -162,7 +161,7 @@ def updateTracker(img):
     lk_params = dict(winSize=(32, 32),
                      maxLevel=8,
                      criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 9, 0.02555))
-    p1, st, err = cv2.calcOpticalFlowPyrLK(old_frame, frame_img, p0, None, **lk_params)
+    p1, st, err = cv2.calcOpticalFlowPyrLK(old_frame.astype(np.float32), frame_img.astype(np.float32), p0, None, **lk_params)
     old_frame = frame_img.copy()
     p0 = p1.copy()
 
@@ -173,7 +172,6 @@ def updateTracker(img):
 def main():
     """
     addded part for model projection preparation
-
     """
     camera_parameters = np.array([[1430, 0, 480], [0, 1430, 620], [0, 0, 1]])
     camera_parameters = np.array([[715, 0, 320], [0, 715, 240], [0, 0, 1]])
@@ -252,7 +250,7 @@ def main():
 
     print('no_of_frames: ', no_of_frames)
 
-    #ret, init_img = cap.read()
+    ret, init_img = cap.read()
 
     # extract the true corners in the first frame and place them into a 2x4 array
     init_corners = [list(ref[0]),
@@ -274,7 +272,7 @@ def main():
     
     #apply_homography(book_cover, img_base_frame,cover_homography, fit_origin=True)
     # initialize tracker with the first frame and the initial corners
-    initTracker(init_img, init_corners)
+    initTracker(img_base_frame, init_corners)
 
     model = cv2.imread('reference/model.jpg', 0)
 

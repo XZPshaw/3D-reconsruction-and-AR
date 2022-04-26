@@ -58,6 +58,13 @@ def get_args_from_command_line():
                         default=0,
                         type=int)  
     
+    
+    parser.add_argument('--show_planar_tracking',
+                        dest='show_planar_tracking',
+                        help='if draw lines for tracked planar, 0 for no, 1 for yes, default 0',
+                        default=0,
+                        type=int)      
+    
     args = parser.parse_args()
     return args
 
@@ -71,9 +78,9 @@ z_bar = 'ratation_z'
 t_1 = "t_x-50"
 t_2 = "t_y-50"
 t_3 = "t_z-50"
-r = "red"
+r = "blue"
 g = "green"
-b = "blue"
+b = "red"
 pointDir_bar = 'reset_tracker'
 
 
@@ -95,7 +102,7 @@ cv2.createTrackbar(g, barsWindow, 0, 255, nothing)
 cv2.createTrackbar(b, barsWindow, 0, 255, nothing)
 
 # set initial values for sliders
-cv2.setTrackbarPos(ratio_bar, barsWindow, 1)
+cv2.setTrackbarPos(ratio_bar, barsWindow, 100)
 cv2.setTrackbarPos(scale_bar, barsWindow, 100)
 cv2.setTrackbarPos(x_bar, barsWindow, 0)
 cv2.setTrackbarPos(y_bar, barsWindow, 0)
@@ -175,15 +182,20 @@ def updateTracker(img):
     frame_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # parameters for lucas kanade optical flow
     
-    lk_params = dict(winSize=(40, 40),
-                     maxLevel=7,
-                     criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 9, 0.03))    
-    """
+    #lk_params = dict(winSize=(80, 80),
+                     #maxLevel=2,
+                     #criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 9, 0.025))    
+    
+    #lk_params = dict(winSize=(32, 32),
+                     #maxLevel=8,
+                     #criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 9, 0.03))
+    #lk_params = dict(winSize=(100, 100),
+                     #maxLevel=1,
+                     #criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.028))
+        
     lk_params = dict(winSize=(32, 32),
                      maxLevel=8,
-                     criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 9, 0.03))
-    """
-    
+                     criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 9, 0.03))    
     """
     _, pyr_old = cv2.buildOpticalFlowPyramid(old_frame, winSize=(15, 15), maxLevel=4)
     _, pyr_new = cv2.buildOpticalFlowPyramid(frame_img, winSize=(15, 15), maxLevel=4)    
@@ -193,7 +205,7 @@ def updateTracker(img):
     old_frame = frame_img.copy()
     p0 = p1.copy()
 
-    print(p1.T)
+    #print(p1.T)
     return p1.T
 
 
@@ -212,15 +224,19 @@ def main():
     
     #camera_parameters = np.array([[715, 0, 480], [0, 715, 620], [0, 0, 1]])
     
-    obj_path = './Pix2Vox-master/result/test/model.obj'
+    obj_path = './Pix2Vox_voxel_render/result/test/model.obj'
     # Load 3D model from OBJ file
     #obj = OBJ('models/fox.obj', swapyz=True)
     # obj = OBJ('low-poly-fox-by-pixelmannen.obj', swapyz=True,texture_file='texture.png')
     # obj = OBJ('./Pix2Vox-master/result/test/model.obj', swapyz=True,texture_file='texture.png')
     
     obj_path = args.obj
+    camera_id = args.camera_id
     obj = OBJ(obj_path, swapyz=True)
     # obj = OBJ('low-poly-fox-by-pixelmannen.obj', swapyz=True,texture_file= None)
+    
+    
+    show_planar_tracking = args.show_planar_tracking
     
     ################## if apply ar to existing video
 
@@ -228,17 +244,32 @@ def main():
     end of this part
     """
 
-    show_tracking_output = 1
 
     NrPoints = 4
 
     #cover_path = 'BlackBackGround.jpg'
     # read the ground truth
-    cover_path = 'ar_tag.png'
+    cover_path = './reference/ar_tag.png'
+    template_type = args.template_type
+    
     book_cover = cv2.imread(str(cover_path))
     plt.imshow(book_cover)
-
-    ref_cover = np.array([[0,0],[book_cover.shape[1] - 1, 0],[book_cover.shape[1] - 1, book_cover.shape[0] - 1],[0, book_cover.shape[0] - 1]])
+    
+    temp_width = 300
+    temp_height = 300
+    if template_type == 1:
+        pass
+    elif template_type == 2:
+        temp_height = 1.5 * temp_width
+        
+    elif template_type == 3:
+        temp_width = 1.5 * temp_height
+        
+    
+    
+    ref_cover = np.array([[0,0],[temp_width, 0],[temp_width, temp_height],[0, temp_height]])
+        
+    #ref_cover = np.array([[0,0],[book_cover.shape[1] - 1, 0],[book_cover.shape[1] - 1, book_cover.shape[0] - 1],[0, book_cover.shape[0] - 1]])
     cover = np.ones((3, NrPoints))
 
     for i in range(NrPoints):
@@ -246,7 +277,7 @@ def main():
 
 
 
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(camera_id)
     fps = cap.get(cv2.CAP_PROP_FPS)
     cap.set(cv2.CAP_PROP_FPS, 60)    
     cv2.namedWindow("capture frame")    
@@ -272,7 +303,7 @@ def main():
         
     plt.imshow(img_base_frame)
     ref = plt.ginput(NrPoints)
-    print(ref)           
+    #print(ref)           
     plt.close()
 
 
@@ -311,11 +342,11 @@ def main():
     initTracker(init_img, init_corners)
 
     model = cv2.imread('ar_tag.png', 0)
-    #model = 1
+    model = 1
 
     test_projection = projection_matrix(camera_parameters, cover_homography)
     image_base_frame_copy = np.copy(img_base_frame)    
-    test_frame = render_with_bar_param(image_base_frame_copy, obj, test_projection, model, False)
+    test_frame = render_with_bar_param(image_base_frame_copy, obj, test_projection, template_type, False)
     if args.test_param == 1:
         while True:
             param_testing_win_name = "Experienment for the params, press space button to see the result,press ESC to start live AR rendering"
@@ -331,17 +362,15 @@ def main():
              
                 break
         
-        
-    if show_tracking_output:
-        # window for displaying the tracking result
-        window_name = 'Tracking Result'
-        cv2.namedWindow(window_name)
+
+    window_name = 'Live rendering'
+    cv2.namedWindow(window_name)
 
     # lists for accumulating the tracking error and fps for all the frames
     #tracking_fps = []
 
     #frame_id = 0
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(camera_id)
     cv2.namedWindow("capture frame") 
     fps = cap.get(cv2.CAP_PROP_FPS)
     cap.set(cv2.CAP_PROP_FPS, 60) 
@@ -351,7 +380,6 @@ def main():
         if not ret:
             print("failed to capture the image")
             return 
-        start_time = time.process_time()
         # update the tracker with the current frame
         tracker_corners = updateTracker(src_img)
 
@@ -363,9 +391,6 @@ def main():
         
         #print("tracker_homography",tracker_homography)
         overall_homography = tracker_homography.dot(cover_homography)
-        end_time = time.process_time() + 1
-
-        # write the current tracker location to the result text file
 
 
         # compute the tracking error
@@ -377,30 +402,32 @@ def main():
         # project cube or model
         frame = render_with_bar_param(src_img, obj, projection, model, False)
         
-        if show_tracking_output:
-            # draw the tracker location
-            #drawRegion(src_img, tracker_corners, result_color, thickness)
-            # write statistics (error and fps) to the image
-            # display the image
-            center_line_color = (0, 255, 255)
-            #cv2.imwrite('./Q4Output/src_img%05d.jpg' % frame_id, src_img)
-            #warped_cover = apply_homography(book_cover, src_img,overall_homography, fit_origin=True, get_image = True)
-            #cv2.imwrite('./Q4Output/warped_cover%05d.jpg' % frame_id, warped_cover)
-            
-            #added_image = cv2.addWeighted(src_img,0.6,warped_cover,0.7,0)
-            cv2.imshow(window_name, frame)                        
+        # draw the tracker location
+        # write statistics (error and fps) to the image
+        # display the image
+        center_line_color = (0, 255, 255)
+        if show_planar_tracking:
+            drawRegion(src_img, tracker_corners, result_color, thickness)
+        
+        #cv2.imwrite('./image_out/src_img%05d.jpg' % frame_id, src_img)
+        #warped_cover = apply_homography(book_cover, src_img,overall_homography, fit_origin=True, get_image = True)
+        #cv2.imwrite('./image_out/warped_cover%05d.jpg' % frame_id, warped_cover)
+        
+        #added_image = cv2.addWeighted(src_img,0.6,warped_cover,0.7,0)
+        cv2.imshow(window_name, frame)                        
 
-            
-            key = cv2.waitKey(1)#pauses for 3 seconds before fetching next image
-            if key == 27:#if ESC is pressed, exit loop
-                cv2.destroyAllWindows()
-                break            
+        
+        key = cv2.waitKey(1)#pauses for 3 seconds before fetching next image
+        if key == 27:#if ESC is pressed, exit loop
+            cv2.destroyAllWindows()
+            break            
 
 def render_with_bar_param(img, obj, projection, model, color=False):
     """
     Render a loaded obj model into the current video frame
     """
     rati, sca, x_rot, y_rot, z_rot, pr_down, t_x, t_y, t_z, r,g,b = read_bar_info()
+    
     
     
     rot_mat_x = AnglesToRotationMatrix("x",x_rot)
@@ -431,7 +458,6 @@ def render_with_bar_param(img, obj, projection, model, color=False):
         h, w = model.shape
         h = h
         w = w
-
     for face in obj.faces:
         face_vertices = face[0]
         points = np.array([vertices[vertex - 1] for vertex in face_vertices])
@@ -460,14 +486,14 @@ def render_with_bar_param(img, obj, projection, model, color=False):
             #color = np.array([r,g,b]) 
             cv2.fillConvexPoly(img, imgpts, DEFAULT_COLOR)
             
-            cv2.polylines(img, imgpts, isClosed=True, color=0, thickness=4,
+            cv2.polylines(img, imgpts, isClosed=True, color=0, thickness=2,
                           lineType=cv2.LINE_4)              
         else:
             #color = hex_to_rgb(face[-1])
             color = color[::-1]  # reverse
             color = (r,g,b)
             cv2.fillConvexPoly(img, imgpts, color)
-            cv2.polylines(img, imgpts, isClosed=True, color=0.8, thickness=2,
+            cv2.polylines(img, imgpts, isClosed=True, color=0.8, thickness= 2,
                           lineType=cv2.LINE_4)            
     return img
 

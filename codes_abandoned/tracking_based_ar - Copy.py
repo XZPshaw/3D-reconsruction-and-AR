@@ -39,7 +39,7 @@ def main():
     num_match_pt = 4
     homography = None 
     # matrix of camera parameters (made up but works quite well for me) 
-    camera_parameters = np.array([[1430, 0, 480], [0, 1430, 620], [0, 0, 1]])
+    camera_parameters = np.array([[715, 0, 320], [0, 715, 240], [0, 0, 1]])
     
     #camera_parameters = np.array([[800, 0, 320], [0, 800, 240], [0, 0, 1]])
     # create ORB keypoint detector
@@ -51,7 +51,7 @@ def main():
     
     reference = 'reference/model.jpg'
     reference = "reference/AR_tag.png"
-    reference = "reference/april_tag163.jpg"
+    #reference = "reference/april_tag163.jpg"
     
     model = cv2.imread(os.path.join(dir_name, reference), 0)
     cv2.imshow("reference", model)
@@ -60,7 +60,7 @@ def main():
     # Load 3D model from OBJ file
     obj = OBJ(os.path.join(dir_name, 'models/fox.obj'), swapyz=True)  
     # init video capture
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
 
     while True:
         # read the current frame
