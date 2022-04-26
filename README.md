@@ -68,6 +68,8 @@ However, the performance is not good for real world ones.
 
 ## live Augmented reality step
 
+- After running, you will be asked to press Esc and select the corner of projection planer in clockwise order. Then it will start tracking and render model as the camera is working.
+
 ```
 python3 live_ar_render.py 
 example runner with args:
@@ -103,4 +105,3 @@ the camera id used for live video capture, default 0
 
 decide if draw lines for tracked planar, 0 for no, 1 for yes, default 0,
 
-When after running, you will be asked to press Esc and select the corner of projection planer in clockwise order. Then it will start tracking and render model as the camera is working.
