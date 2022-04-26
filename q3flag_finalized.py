@@ -57,8 +57,8 @@ def find_homography(X, X_P, NrPoints,norm='l1', normalization=True):
         T_norm = X_scale.dot(X_trans).astype(float)
         T_P_norm = X_P_scale.dot(X_P_trans)
 
-        print("T_norm:", T_norm)
-        print("T_P_norm:", T_P_norm)
+        # print("T_norm:", T_norm)
+        # print("T_P_norm:", T_P_norm)
         
         """
         apply the normalization transformation to the choosen pairs of points
@@ -66,8 +66,8 @@ def find_homography(X, X_P, NrPoints,norm='l1', normalization=True):
         X = T_norm.dot(X)
         X_P = T_P_norm.dot(X_P)
 
-        print("normalized_X:", X)
-        print("normalized_X_P:", X_P)
+        # print("normalized_X:", X)
+        # print("normalized_X_P:", X_P)
 
     """
     therefore, if there is normalization flag,the X and X_P will be the coordinates normalized points and it not, they will be the original coordinates during selection 
