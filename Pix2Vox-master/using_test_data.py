@@ -87,8 +87,7 @@ with torch.no_grad():
     # Get data from data loader
     output_dir = "./Pix2Vox-master/result"
     path_img = './test_recons'
-    path_img = './test_table'
-    path_img = '/'
+    path_img = './Pix2Vox-master/test_car'
     ft = 'png'
     # ft = 'jpg'
     imgs = loadImgs_plus(path_img, ft, grayscale=False)
